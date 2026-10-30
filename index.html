@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Daftar Hadir Keluarga</title>
+
+<!-- LINK CDN YANG SUDAH DIPERBAIKI (JANGAN DIUBAH) -->
+<link href="https://cdn.jsdelivr.net/npm/family-chart@0.9.0/dist/styles/family-chart.css" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/family-chart@0.9.0/dist/family-chart.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #f4f7fa; color: #222; overflow: hidden; }
+  header { background: linear-gradient(135deg, #4a90e2, #2c6cb0); color: #fff; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 10; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p  { margin: 4px 0 0; font-size: 13px; opacity: .9; }
+  
+  #FamilyChart { width: 100%; height: calc(100vh - 88px); background: radial-gradient(#e3e9f0 1px, transparent 1px) 0 0 / 20px 20px, #f4f7fa; }
+
+  .my-card { background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 13px; text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.08); cursor: pointer; transition: transform .15s; }
+  .my-card:hover { transform: translateY(-2px); }
+  .my-card .nama  { font-weight: 700; font-size: 14px; line-height: 1.2; }
+  .my-card .birth { color: #666; font-size: 11px; }
+  .my-card .status { font-size: 11px; margin-top: 2px; color: #888; }
+  .my-card .status.hadir { color: #1a7f37; font-weight: 600; }
+  .my-card .status.tidak { color: #c0392b; font-weight: 600; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal.hidden { display: none; }
+  .modal-box { background: #fff; border-radius: 14px; padding: 22px; width: min(90vw, 380px); box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+  .modal-box h3 { margin: 0 0 4px; font-size: 18px; }
+  .modal-box .sub { color: #777; font-size: 12px; margin-bottom: 14px; }
+  .modal-row { display: flex; gap: 10px; margin: 10px 0; }
+  .modal-row label { flex: 1; display: flex; align-items: center; gap: 6px; padding: 10px; border: 1.5px solid #d7dde5; border-radius: 10px; cursor: pointer; font-size: 14px; }
+  .modal-row input[type=radio] { accent-color: #2c6cb0; }
+  .modal-row label:has(input:checked) { border-color: #2c6cb0; background: #eef5ff; }
+  .modal-jumlah { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+  .modal-jumlah input { width: 90px; padding: 8px; font-size: 15px; border: 1.5px solid #d7dde5; border-radius: 8px; }
+  .modal-jumlah input:disabled { background: #f1f1f1; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  .actions button { flex: 1; padding: 11px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-weight: 600; }
+  .btn-kirim { background: #2c6cb0; color: #fff; }
+  .btn-kirim:disabled { background: #97b5d8; cursor: wait; }
+  .btn-batal { background: #eef1f5; color: #333; }
+  
+  .legend { position: absolute; bottom: 12px; left: 12px; background: #fff; padding: 8px 12px; border-radius: 10px; font-size: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.1); display: flex; gap: 12px; z-index: 5; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌳 Daftar Hadir Keluarga</h1>
+  <p id="stats">Memuat...</p>
+</header>
+
+<div id="FamilyChart"></div>
+
+<div class="legend">
+  <span><span class="dot" style="background:#fff;border:1px solid #ccc"></span>Belum</span>
+  <span><span class="dot" style="background:#1a7f37"></span>Hadir</span>
+  <span><span class="dot" style="background:#c0392b"></span>Tidak hadir</span>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <h3 id="modalName">Nama</h3>
+    <div class="sub">Konfirmasi kehadiran Anda</div>
+    <div class="modal-row">
+      <label><input type="radio" name="hadir" value="1" checked> ✅ Hadir</label>
+      <label><input type="radio" name="hadir" value="0"> ❌ Tidak hadir</label>
+    </div>
+    <div class="modal-jumlah">
+      <label for="modalJumlah">Jumlah orang:</label>
+      <input type="number" id="modalJumlah" min="1" value="1" inputmode="numeric">
+    </div>
+    <div class="actions">
+      <button class="btn-batal" id="btnBatal">Batal</button>
+      <button class="btn-kirim" id="btnKirim">Kirim</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
